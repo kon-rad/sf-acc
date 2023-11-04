@@ -1,0 +1,48 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+:root {
+  --color-pink-text: rgb(207 33 130);
+  --darkmode-bg: #0d1116;
+  --primary-color: #003d59;
+  --primary-color-dark: #c7edff;
+  --attention-purple: #97017f;
+  --tw-bg-opacity: #97017f
+  --high-red: #700202;
+  --purple-heat-4: hsl(277.51deg 87.06% 66.67%);
+  --action-color: #ff1abe;
+  --action-color-hover: #ffa4e3;
+}
+
+main {
+  @apply max-w-screen-xl mx-auto flex flex-col;
+}
+header,
+section {
+  @apply px-5 md:px-10;
+}
+
+@layer utilities {
+  .scrollbar::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  .scrollbar::-webkit-scrollbar-track {
+    /* border-radius: 5px; */
+    /* background: #fff; */
+    @apply bg-white dark:bg-black;
+  }
+
+  .scrollbar::-webkit-scrollbar-thumb {
+    /* background: #000; */
+    /* border-radius: 100vh; */
+    /* border: 3px solid #fff; */
+    @apply bg-gray-200 dark:bg-gray-600 border border-white rounded-sm;
+  }
+
+  .scrollbar::-webkit-scrollbar-thumb:hover {
+    /* background: #000; */
+    @apply bg-gray-500;
+  }
+}
