@@ -1,0 +1,43 @@
+.davinci_dots {
+  width: 50px;
+  height: 20px;
+  border-radius: 10px;
+  /* background-color: #CCC; */
+  /* margin: 10px 0px; */
+  transform: scale(1);
+  /* animation: overall-scale 8s infinite; */
+}
+
+.davinci_dot {
+  animation-timing-function: ease-in;
+  animation-iteration-count: infinite;
+  animation-name: dot-scale;
+  animation-duration: 1s;
+  
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 5px 0px;
+  border-radius: 10px;
+  background-color: #444;
+  transform: scale(0.65);
+}
+.davinci_dot_1 {
+  margin-left: 6px
+}
+.davinci_dot_2 {
+  animation-delay: 0.15s;
+}
+.davinci_dot_3 {
+  animation-delay: 0.3s;
+}
+
+@keyframes dot-scale {
+  0%, 70% { transform: scale(0.65); }
+  35% { transform: scale(1); }
+}
+
+/* @keyframes overall-scale {
+  0%, 95% { transform: scale(0); }
+  5%, 90% { transform: scale(1); }
+} */

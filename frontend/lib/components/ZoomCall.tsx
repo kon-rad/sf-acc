@@ -4,7 +4,7 @@ import UserVideo from "./UserVideo";
 const demo = false;
 const ZoomCall = () => {
   const users = [
-    { id: 1, name: "Dr. Talk Therapist", img: "/assets/images/bot-1.png" },
+    { id: 1, name: "Dr. Therapist", img: "/assets/images/bot-1.png" },
     { id: 2, name: "Dr. Siddhartha Buddha", img: "/assets/images/bot-2.png" },
     { id: 3, name: "Dr. J. Christ", img: "/assets/images/bot-3.png" },
   ];

@@ -35,6 +35,21 @@
     node-fetch "^2.6.7"
     web-streams-polyfill "^3.2.1"
 
+"@anthropic-ai/sdk@^0.8.1":
+  version "0.8.1"
+  resolved "https://registry.yarnpkg.com/@anthropic-ai/sdk/-/sdk-0.8.1.tgz#7c7c6cb262abe3e6d0bb8bd1179b4589edd7a6ad"
+  integrity sha512-59etePenCizVx1O8Qhi1T1ruE04ISfNzCnyhZNcsss1QljsLmYS83jttarMNEvGYcsUF7rwxw2lzcC3Zbxao7g==
+  dependencies:
+    "@types/node" "^18.11.18"
+    "@types/node-fetch" "^2.6.4"
+    abort-controller "^3.0.0"
+    agentkeepalive "^4.2.1"
+    digest-fetch "^1.3.0"
+    form-data-encoder "1.7.2"
+    formdata-node "^4.3.2"
+    node-fetch "^2.6.7"
+    web-streams-polyfill "^3.2.1"
+
 "@apideck/components@^0.12.15":
   version "0.12.16"
   resolved "https://registry.yarnpkg.com/@apideck/components/-/components-0.12.16.tgz#23e8ed50a691f4871d9340146d2ff4746ad1fecd"
@@ -6349,10 +6364,10 @@ lamejs@^1.2.1:
   dependencies:
     use-strict "1.0.1"
 
-langchain@^0.0.169:
-  version "0.0.169"
-  resolved "https://registry.yarnpkg.com/langchain/-/langchain-0.0.169.tgz#33230fdcf0687d7b883bbc4858d873e97ed9dfb5"
-  integrity sha512-2JEYgLa827M+5GAWLX2hjWd5HuB8H4wYJBD6Ds5rCy49Oqffhz6h+af1yfLWooL2K3aoHDHiwt+YbI4gWeN+7w==
+langchain@^0.0.180:
+  version "0.0.180"
+  resolved "https://registry.yarnpkg.com/langchain/-/langchain-0.0.180.tgz#8b43fb39b48fad1f606e9532044bde5b70802f62"
+  integrity sha512-/70mZsBAUcGZHiHTEs0pO1+xyVwj4X1FMl2LmTuBv83/+yNYkAJJg5+rLI9u6Obj7ZcsoNmqIPpsOL5rx2yJww==
   dependencies:
     "@anthropic-ai/sdk" "^0.6.2"
     ansi-styles "^5.0.0"
@@ -7487,6 +7502,21 @@ open@^7.4.2:
   dependencies:
     is-docker "^2.0.0"
     is-wsl "^2.1.1"
+
+openai@^4.15.3:
+  version "4.15.3"
+  resolved "https://registry.yarnpkg.com/openai/-/openai-4.15.3.tgz#d281e9a20259a13976c01c8c30bc0a5f50afc818"
+  integrity sha512-j2XSxxiOhF7lCiHUXmuDOGOgtKa36ia9pOQ2m9YCOMA2Ee4QTI+MzdHRoHlp6ewOsvW5NXkoT+xustSZljiGnA==
+  dependencies:
+    "@types/node" "^18.11.18"
+    "@types/node-fetch" "^2.6.4"
+    abort-controller "^3.0.0"
+    agentkeepalive "^4.2.1"
+    digest-fetch "^1.3.0"
+    form-data-encoder "1.7.2"
+    formdata-node "^4.3.2"
+    node-fetch "^2.6.7"
+    web-streams-polyfill "^3.2.1"
 
 openai@~4.4.0:
   version "4.4.0"

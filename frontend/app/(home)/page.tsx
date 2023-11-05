@@ -7,27 +7,38 @@ import Banner from "@/lib/components/Banner";
 import { useRouter } from "next/navigation";
 import { useGlobalState } from "@/lib/context/GlobalStateProvider";
 import ZoomCall from "@/lib/components/ZoomCall";
-const HomePage = (): JSX.Element => {
-  const router = useRouter();
+import Chat from "@/lib/components/Chat";
+import { useSupabase } from "@/lib/context/SupabaseProvider";
 
+const HomePage = (): JSX.Element => {
+  // const router = useRouter();
+
+  const { session } = useSupabase();
+  if (!session?.user.id) {
+    alert("please login /login");
+  }
+  console.log("session: ", session?.user.id);
   return (
     <div
       style={{
-        minHeight: "100vh",
+        height: "100vh", // Set the container to the full viewport height
         display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
+        flexDirection: "row", // Align children in a row
+        alignItems: "stretch", // Stretch children to fill the container height
         backgroundImage: 'url("/assets/images/matrix.gif")',
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
       }}
-      className="flex flex-col justify-center items-center py-18"
     >
-      <div className="flex mt-16 justify-center">
-        <h1 className="text-5xl">hello world</h1>
+      {/* ZoomCall component to take up the remaining space */}
+      <div style={{ width: "70%", height: "100%" }}>
         <ZoomCall />
+      </div>
+
+      {/* Chat component with 30% screen width, on the right */}
+      <div style={{ width: "30%", height: "100%" }}>
+        <Chat />
       </div>
     </div>
   );

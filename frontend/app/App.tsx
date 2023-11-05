@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PropsWithChildren, useEffect } from "react";
 import { useSupabase } from "@/lib/context/SupabaseProvider";
 
+import { MessagesProvider } from "@/lib/hooks/useMessages";
 import { GlobalStateProvider } from "@/lib/context/GlobalStateProvider";
 // import { useAppContext } from "@/lib/context/AppProvider/hooks/useAppContext";
 
@@ -19,9 +20,11 @@ export const App = ({ children }: PropsWithChildren): JSX.Element => {
 
   return (
     <GlobalStateProvider>
-      <QueryClientProvider client={queryClient}>
-        <div className="flex-1">{children}</div>
-      </QueryClientProvider>
+      <MessagesProvider>
+        <QueryClientProvider client={queryClient}>
+          <div className="flex-1">{children}</div>
+        </QueryClientProvider>
+      </MessagesProvider>
     </GlobalStateProvider>
   );
 };
