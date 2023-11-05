@@ -29,10 +29,10 @@ begin
     content,
     metadata,
     (embedding::text)::jsonb as embedding,
-    1 - (documents.embedding <=> query_embedding) as similarity
-  from documents
+    1 - (sfacc_documents.embedding <=> query_embedding) as similarity
+  from sfacc_documents
   where metadata @> filter
-  order by documents.embedding <=> query_embedding
+  order by sfacc_documents.embedding <=> query_embedding
   limit match_count;
 end;
 $$;

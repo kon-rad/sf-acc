@@ -4,10 +4,10 @@ export const sendMessage = async (
   messages: ChatCompletionRequestMessage[],
   setMessages: any,
   newMessages: any,
-  userId: string,
+  userId: string
 ) => {
   try {
-    const response = await fetch("/api/agent/chat", {
+    const response = await fetch("/api/chat", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

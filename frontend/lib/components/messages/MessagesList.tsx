@@ -1,13 +1,15 @@
 import { useMessages } from "@/lib/hooks/useMessages";
 import styles from "./MessagesList.module.css";
+import SpeechPlayer from "@/lib/components/SpeechPlayer";
 
 import { Accordion } from "flowbite-react";
 const MessagesList = () => {
   const { messages, isLoadingAnswer } = useMessages();
+  console.log("messages list messages: ", messages);
 
   return (
     <div className="max-w-screen-lg mx-auto pt-2 w-full overflow-y-scroll pr-4 h-full bg-white p-2">
-      {messages?.map((message, i) => {
+      {messages?.map((message: any, i: number) => {
         const isUser = message.role === "user";
         if (message.role === "system") return null;
         return (
@@ -20,7 +22,7 @@ const MessagesList = () => {
           >
             {!isUser && (
               <img
-                src="/assets/images/bot-1.png"
+                src="/assets/images/jobs.png"
                 className="w-9 h-9 rounded-full"
                 alt="avatar"
               />
@@ -34,6 +36,11 @@ const MessagesList = () => {
               }`}
             >
               {message.content?.trim()}
+              {!isUser && !isLoadingAnswer && message.content?.trim() && (
+                <div className="flex flex-col my-2 pp-2">
+                  <SpeechPlayer textBody={message.content?.trim()} />
+                </div>
+              )}
               <div className="flex flex-col w-full">
                 {/* {!isUser && <AudioPlayer textBody={message.content.trim()} />} */}
                 {message.sources && (
@@ -72,7 +79,7 @@ const MessagesList = () => {
       {isLoadingAnswer && (
         <div className="flex justify-start mb-4">
           <img
-            src="/assets/images/bot-1.png"
+            src="/assets/images/jobs.png"
             className="w-9 h-9 rounded-full"
             alt="avatar"
           />

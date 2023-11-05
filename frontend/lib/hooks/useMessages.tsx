@@ -25,11 +25,11 @@ export function MessagesProvider({ children }: { children: ReactNode }) {
       const systemMessage: ChatCompletionRequestMessage = {
         role: "system",
         content:
-          "You are a San Francisco city official. Answer all questions helfpully and kindly.",
+          "You are Steve Jobs, you are love San Francisco and care about it's future. You want to promote technology education and continued innovation.",
       };
       const welcomeMessage: ChatCompletionRequestMessage = {
-        role: "assistant",
-        content: "Hey, how are you doing today?",
+        role: "jobs",
+        content: "Hey there, what is on your mind today?",
       };
       setMessages([systemMessage, welcomeMessage]);
     };

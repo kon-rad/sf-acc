@@ -30,8 +30,12 @@ Standalone question:`;
 
 // this was the 2nd template version and the ai didn't respond anything, it wasn't good.
 
-const ANSWER_TEMPLATE = `You are the expert bot on the AI Engineer Summit. You have all the information anyone would ever need on the Summit. Answer the question in a helpful manner.
-Only use the context you know about the video to answer the question. Don't make things up.
+const MAYOR_ANSWER_TEMPLATE = `You are the London Breed, the Mayor of San Francisco. Answer the question in a helpful manner.
+Use the context as a helpful source, if it doesn't help, that's okay just keep the conversation helpful.
+Raised in the Western Addition neighborhood of San Francisco, you worked in government after college. You were elected to the Board of Supervisors in 2012 (taking office in January 2013), and elected its president in 2015.
+As president of the Board, Breed, according to the city charter, you became the acting mayor of San Francisco following the death of Mayor Ed Lee. You served in this role from December 12, 2017, to January 23, 2018.
+You won the San Francisco mayoral special election held on June 5, 2018. You are the first black woman, second black person after Willie Brown, and second woman after Dianne Feinstein to be elected mayor of San Francisco. You were sworn in as mayor on July 11, 2018.
+
 Context: {context}
 
 Chat history: {chat_history}
@@ -56,21 +60,23 @@ export async function POST(req: NextRequest) {
     console.log("userId: ", userId);
     const formattedPreviousMessages = messages.slice(0, -1).map(formatMessage);
     const currentMessageContent = messages[messages.length - 1].content;
+    console.log("currentMessageContent", currentMessageContent);
+    console.log("formattedPreviousMessages", formattedPreviousMessages);
 
     const condenseQuestionPrompt = PromptTemplate.fromTemplate(
       CONDENSE_QUESTION_TEMPLATE
     );
-    const answerPrompt = PromptTemplate.fromTemplate(ANSWER_TEMPLATE);
+    const answerPrompt = PromptTemplate.fromTemplate(MAYOR_ANSWER_TEMPLATE);
 
-    // const model = new ChatOpenAI({
-    //   modelName: "gpt-3.5-turbo",
-    //   temperature: 0.2,
-    //   openAIApiKey: process.env.OPENAI_API_KEY,
-    // });
-    const model = new ChatAnthropic({
-      temperature: 0.9,
-      anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+    const model = new ChatOpenAI({
+      modelName: "gpt-3.5-turbo",
+      temperature: 0.2,
+      openAIApiKey: process.env.OPENAI_API_KEY,
     });
+    // const model = new ChatAnthropic({
+    //   temperature: 0.9,
+    //   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+    // });
 
     const vectorStore = new SupabaseVectorStore(new OpenAIEmbeddings(), {
       client,
@@ -92,7 +98,7 @@ export async function POST(req: NextRequest) {
     });
 
     const retriever = vectorStore.asRetriever({
-      filter: { source: videoId },
+      // filter: { source: videoId },
       callbacks: [
         {
           handleRetrieverEnd(documents) {
@@ -116,6 +122,7 @@ export async function POST(req: NextRequest) {
 
     // initialize the retrievalChain
     const retrievalChain = retriever.pipe(combineDocumentsFn);
+    console.log("before answerChain");
 
     // initialize the answerChain - combines retrievalChain which gets the context documents
     // it invokes the retrievalChain
@@ -131,6 +138,7 @@ export async function POST(req: NextRequest) {
       answerPrompt,
       model,
     ]);
+    console.log("after answerChain");
 
     // conversationalRetrievalQAChain
     //    1st -> standaloneQuestionChain:
@@ -151,29 +159,36 @@ export async function POST(req: NextRequest) {
       answerChain,
       new BytesOutputParser(),
     ]);
+    console.log("after conversationalRetrievalQAChain");
+    console.log("currentMessageContent", currentMessageContent);
+    console.log("formattedPreviousMessages", formattedPreviousMessages);
 
-    const stream = await conversationalRetrievalQAChain.stream({
-      question: currentMessageContent,
-      chat_history: formattedPreviousMessages,
-    });
+    const stream = await conversationalRetrievalQAChain
+      .stream({
+        question: currentMessageContent,
+        chat_history: formattedPreviousMessages,
+      })
+      .catch((e) => console.error("Error with stream:", e));
+    console.log("got here 1 ");
 
-    const documents = await documentPromise;
+    // const documents = await documentPromise;
+    console.log("got here");
 
-    const serializedSources = Buffer.from(
-      JSON.stringify(
-        documents.map((doc) => {
-          return {
-            pageContent: doc.pageContent,
-            metadata: doc.metadata,
-          };
-        })
-      )
-    ).toString("base64");
+    // const serializedSources = Buffer.from(
+    //   JSON.stringify(
+    //     documents.map((doc) => {
+    //       return {
+    //         pageContent: doc.pageContent,
+    //         metadata: doc.metadata,
+    //       };
+    //     })
+    //   )
+    // ).toString("base64");
 
     return new StreamingTextResponse(stream, {
       headers: {
         "x-message-index": (formattedPreviousMessages.length + 1).toString(),
-        "x-sources": serializedSources,
+        // "x-sources": serializedSources,
       },
     });
   } catch (e: any) {

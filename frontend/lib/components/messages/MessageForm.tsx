@@ -46,7 +46,7 @@ const MessageForm = () => {
       className="relative mx-auto w-full rounded-t-xl"
       onSubmit={handleSubmit}
     >
-      <div className=" border-gray-200 rounded-t-xl backdrop-blur border-t border-l border-r border-gray-500/10 bg-white supports-backdrop-blur:bg-white/95 p-5">
+      <div className=" border-gray-200 rounded-t-xl backdrop-blur border-t border-l border-r border-gray-500/10 bg-white supports-backdrop-blur:bg-white/95 p-2">
         <label htmlFor="content" className="sr-only">
           Your message
         </label>
