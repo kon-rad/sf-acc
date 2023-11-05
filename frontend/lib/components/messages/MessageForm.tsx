@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { MicButton } from "@/lib/components/MicButton";
 import { useSupabase } from "@/lib/context/SupabaseProvider";
 
-const MessageForm = () => {
+const MessageForm = ({ setStatus }: any) => {
   const [content, setContent] = useState("");
   // const [exampleQuestions, setExampleQuestions] = useState<any>();
   const { session } = useSupabase();
@@ -32,7 +32,7 @@ const MessageForm = () => {
 
   const handleSubmit = async (e?: any) => {
     e?.preventDefault();
-    addMessage(content, userId);
+    addMessage(content, userId, setStatus);
     setContent("");
   };
   const handleKeyPress = (event: KeyboardEvent<HTMLInputElement>) => {

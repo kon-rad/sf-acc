@@ -4,9 +4,11 @@ export const sendMessage = async (
   messages: ChatCompletionRequestMessage[],
   setMessages: any,
   newMessages: any,
-  userId: string
+  userId: string,
+  setStatus: any,
 ) => {
   try {
+    setStatus('PENDING');
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: {
@@ -37,7 +39,8 @@ export const sendMessage = async (
       response.body.getReader(),
       setMessages,
       newMessages,
-      sourcesText
+      sourcesText,
+      setStatus
     );
   } catch (error) {
     console.log(error);
@@ -48,19 +51,22 @@ const handleStream = async (
   reader: ReadableStreamDefaultReader<Uint8Array>,
   setMessages: any,
   newMessages: any,
-  sources: any
+  sources: any,
+  setStatus: any
 ): Promise<void> => {
   let message = "";
 
   const handleStreamRecursively = async () => {
     const { done, value } = await reader.read();
 
-    if (done) {
-      return;
-    }
     const text = new TextDecoder().decode(value);
 
     message += text;
+
+    if (done) {
+      setStatus('READY')
+      return;
+    }
     setMessages([
       ...newMessages,
       { content: message, role: "assistant", sources },

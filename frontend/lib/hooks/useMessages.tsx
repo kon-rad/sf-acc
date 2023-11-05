@@ -30,6 +30,7 @@ export function MessagesProvider({ children }: { children: ReactNode }) {
       const welcomeMessage: ChatCompletionRequestMessage = {
         role: "jobs",
         content: "Hey there, what is on your mind today?",
+        status: "READY",
       };
       setMessages([systemMessage, welcomeMessage]);
     };
@@ -41,7 +42,11 @@ export function MessagesProvider({ children }: { children: ReactNode }) {
     }
   }, [messages?.length, setMessages]);
 
-  const addMessage = async (content: string, videoId: string) => {
+  const addMessage = async (
+    content: string,
+    videoId: string,
+    setStatus: any
+  ) => {
     setIsLoadingAnswer(true);
     try {
       const newMessage: ChatCompletionRequestMessage = {
@@ -53,7 +58,13 @@ export function MessagesProvider({ children }: { children: ReactNode }) {
 
       setMessages(newMessages);
 
-      await sendMessage(newMessages, setMessages, newMessages, videoId);
+      await sendMessage(
+        newMessages,
+        setMessages,
+        newMessages,
+        videoId,
+        setStatus
+      );
     } catch (error) {
       console.error("hi error: ", error);
       // Show error when something goes wrong

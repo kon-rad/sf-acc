@@ -3,7 +3,7 @@ import styles from "./MessagesList.module.css";
 import SpeechPlayer from "@/lib/components/SpeechPlayer";
 
 import { Accordion } from "flowbite-react";
-const MessagesList = () => {
+const MessagesList = ({ setStatus, status }: any) => {
   const { messages, isLoadingAnswer } = useMessages();
   console.log("messages list messages: ", messages);
 
@@ -36,11 +36,14 @@ const MessagesList = () => {
               }`}
             >
               {message.content?.trim()}
-              {!isUser && !isLoadingAnswer && message.content?.trim() && (
-                <div className="flex flex-col my-2 pp-2">
-                  <SpeechPlayer textBody={message.content?.trim()} />
-                </div>
-              )}
+              {!isUser &&
+                !isLoadingAnswer &&
+                message.content?.trim() &&
+                i === messages.length - 1 && (
+                  <div className="flex flex-col my-2 pp-2">
+                    <SpeechPlayer textBody={message.content?.trim()} />
+                  </div>
+                )}
               <div className="flex flex-col w-full">
                 {/* {!isUser && <AudioPlayer textBody={message.content.trim()} />} */}
                 {message.sources && (

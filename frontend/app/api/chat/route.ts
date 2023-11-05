@@ -16,6 +16,34 @@ const formatMessage = (message: VercelChatMessage) => {
   return `${message.role}: ${message.content}`;
 };
 
+import axios from "axios";
+
+const textToSpeech = async (inputText: string) => {
+  const API_KEY = process.env.NEXT_PUBLIC_ELEVEN_LABS_KEY;
+  const VOICE_ID = "21m00Tcm4TlvDq8ikWAM";
+
+  console.log("text to speech called: ", inputText);
+
+  const options = {
+    method: "POST",
+    url: `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}/stream`,
+    headers: {
+      accept: "audio/mpeg",
+      "content-type": "application/json",
+      "xi-api-key": `${API_KEY}`,
+    },
+    data: {
+      text: inputText,
+    },
+    responseType: "arraybuffer",
+  };
+
+  const speechDetails = await axios.request(options);
+  console.log("text to speech called: speechDetails", speechDetails);
+
+  return speechDetails.data;
+};
+
 const CONDENSE_QUESTION_TEMPLATE = `Given the following conversation and a follow up question, 
 rephrase the follow up question to be a standalone question, in its original language.
 {chat_history}
@@ -68,15 +96,15 @@ export async function POST(req: NextRequest) {
     );
     const answerPrompt = PromptTemplate.fromTemplate(MAYOR_ANSWER_TEMPLATE);
 
-    const model = new ChatOpenAI({
-      modelName: "gpt-3.5-turbo",
-      temperature: 0.2,
-      openAIApiKey: process.env.OPENAI_API_KEY,
-    });
-    // const model = new ChatAnthropic({
-    //   temperature: 0.9,
-    //   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+    // const model = new ChatOpenAI({
+    //   modelName: "gpt-3.5-turbo",
+    //   temperature: 0.2,
+    //   openAIApiKey: process.env.OPENAI_API_KEY,
     // });
+    const model = new ChatAnthropic({
+      temperature: 0.9,
+      anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+    });
 
     const vectorStore = new SupabaseVectorStore(new OpenAIEmbeddings(), {
       client,
@@ -171,7 +199,18 @@ export async function POST(req: NextRequest) {
       .catch((e) => console.error("Error with stream:", e));
     console.log("got here 1 ");
 
-    // const documents = await documentPromise;
+    // const textRes = await conversationalRetrievalQAChain
+    //   .invoke({
+    //     question: currentMessageContent,
+    //     chat_history: formattedPreviousMessages,
+    //   })
+    //   .catch((e) => console.error("Error with stream:", e));
+    // console.log("got here 1 textRes ", textRes);
+
+    // const resultTwo = await chain.invoke({
+    //   chatHistory: formatChatHistory(resultOne, questionOne),
+    //   question: "Was it
+    // // const documents = await documentPromise;
     console.log("got here");
 
     // const serializedSources = Buffer.from(
