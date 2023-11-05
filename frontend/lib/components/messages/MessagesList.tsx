@@ -1,3 +1,4 @@
+import React from "react";
 import { useMessages } from "@/lib/hooks/useMessages";
 import styles from "./MessagesList.module.css";
 import SpeechPlayer from "@/lib/components/SpeechPlayer";
@@ -6,7 +7,79 @@ import { Accordion } from "flowbite-react";
 const MessagesList = ({ setStatus, status }: any) => {
   const { messages, isLoadingAnswer } = useMessages();
   console.log("messages list messages: ", messages);
+  const isValidUrl = (string: string): boolean => {
+    try {
+      new URL(string);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  };
+  const renderTextOrLink = (text: string): JSX.Element => {
+    if (isValidUrl(text)) {
+      // Return text as an anchor tag if it's a valid URL
+      return (
+        <a
+          href={text}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: "blue" }}
+        >
+          {text}
+        </a>
+      );
+    } else {
+      // Return text as a span if it's not a valid URL
+      return <span>{text}</span>;
+    }
+  };
+  const convertTextToElements = (text) => {
+    if (!text) return [];
 
+    // Split text by new lines and process each line separately
+    const lines = text.split("\n");
+    const elements = lines.flatMap((line, lineIndex) => {
+      // Regex to find markdown links [text](url)
+      const markdownLinkRegex = /\[([^\]]+)]\((https?:\/\/[^\s)]+)\)/g;
+
+      // Split line into parts by markdown links
+      const parts = line.split(markdownLinkRegex);
+      const lineElements = [];
+
+      for (let i = 0; i < parts.length; i += 3) {
+        // Normal text
+        lineElements.push(parts[i]);
+
+        // Markdown link text
+        const text = parts[i + 1];
+        // Markdown link url
+        const url = parts[i + 2];
+
+        if (text && url) {
+          lineElements.push(
+            <a
+              key={`${lineIndex}-${i}`}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "blue" }}
+            >
+              {text}
+            </a>
+          );
+        }
+      }
+
+      // Add line break after each line except the last one
+      if (lineIndex < lines.length - 1) {
+        lineElements.push(<br key={`br-${lineIndex}`} />);
+      }
+
+      return lineElements;
+    });
+
+    return elements;
+  };
   return (
     <div className="max-w-screen-lg mx-auto pt-2 w-full overflow-y-scroll pr-4 h-full bg-white p-2">
       {messages?.map((message: any, i: number) => {
@@ -35,7 +108,7 @@ const MessagesList = ({ setStatus, status }: any) => {
                   : "ml-2 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200"
               }`}
             >
-              {message.content?.trim()}
+              {convertTextToElements(message.content?.trim())}
               {!isUser &&
                 !isLoadingAnswer &&
                 message.content?.trim() &&
@@ -45,7 +118,6 @@ const MessagesList = ({ setStatus, status }: any) => {
                   </div>
                 )}
               <div className="flex flex-col w-full">
-                {/* {!isUser && <AudioPlayer textBody={message.content.trim()} />} */}
                 {message.sources && (
                   <Accordion collapseAll>
                     <Accordion.Panel>
@@ -59,7 +131,7 @@ const MessagesList = ({ setStatus, status }: any) => {
                               {item.pageContent}
                             </p>
                             <p className="text-xs mb-1 text-gray-400">
-                              {item.metadata.source}
+                              {renderTextOrLink(item.metadata.source)}
                             </p>
                           </div>
                         ))}

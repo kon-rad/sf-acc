@@ -1,6 +1,5 @@
 import { getSupabaseClient } from "@/lib/utils/supabase";
 import { StreamingTextResponse, Message as VercelChatMessage } from "ai";
-import { ChatOpenAI } from "langchain/chat_models/openai";
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { PromptTemplate } from "langchain/prompts";
 import {
@@ -11,6 +10,10 @@ import { RunnableSequence } from "langchain/schema/runnable";
 import { SupabaseVectorStore } from "langchain/vectorstores/supabase";
 import { NextRequest, NextResponse } from "next/server";
 import { ChatAnthropic } from "langchain/chat_models/anthropic";
+import { initializeAgentExecutorWithOptions } from "langchain/agents";
+import { ChatOpenAI } from "langchain/chat_models/openai";
+import { SerpAPI } from "langchain/tools";
+import { Calculator } from "langchain/tools/calculator";
 
 const formatMessage = (message: VercelChatMessage) => {
   return `${message.role}: ${message.content}`;
@@ -82,6 +85,91 @@ Helpful answer:
 export async function POST(req: NextRequest) {
   try {
     const { messages, userId } = await req.json();
+
+    const formattedPreviousMessages = messages.slice(0, -1).map(formatMessage);
+    const currentMessageContent = messages[messages.length - 1].content;
+    console.log("currentMessageContent", currentMessageContent);
+
+    const searchAndLogKeywords = (messageContent: string): string => {
+      const keywords = ["news", "mayor", "steve", "ilya"];
+
+      let matchFound = "mayor";
+      keywords.forEach((keyword) => {
+        const regex = new RegExp(`\\b${keyword}\\b`, "i"); // case-insensitive match
+        if (regex.test(messageContent)) {
+          console.log(
+            `Keyword "${keyword}" found in message: ${messageContent}`
+          );
+          matchFound = keyword;
+        }
+      });
+      return matchFound;
+    };
+    let response = "hey lets try again";
+
+    // Call the function to search for keywords and log if they are present
+    const agentChosen = searchAndLogKeywords(currentMessageContent);
+    if (agentChosen?.toLowerCase() === "news") {
+      console.log("news agent picked");
+      const response = await newsAgent(messages, userId);
+      return new Response(
+        JSON.stringify(response, {
+          headers: {
+            "x-message-index": (
+              formattedPreviousMessages.length + 1
+            ).toString(),
+          },
+        })
+      );
+    } else if (agentChosen?.toLowerCase() === "mayor") {
+      console.log("mayor agent picked");
+      await mayorAgent(messages, userId);
+    } else if (agentChosen?.toLowerCase() === "steve") {
+      console.log("steve agent picked");
+    } else if (agentChosen?.toLowerCase() === "ilya") {
+      console.log("ilya agent picked");
+    } else {
+      console.log("No keyword match found in the message. choosing mayor");
+    }
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
+}
+
+const newsAgent = async (messages: string, userId: string) => {
+  // Define the model with stop tokens.
+  // const model = new ChatAnthropic({ temperature: 0 }).bind({
+  //   stop: ["</tool_input>", "</final_answer>"],
+  // });
+  try {
+    const formattedPreviousMessages = messages.slice(0, -1).map(formatMessage);
+    const currentMessageContent = messages[messages.length - 1].content;
+    const tools = [new Calculator(), new SerpAPI()];
+    const chat = new ChatOpenAI({ modelName: "gpt-4", temperature: 0 });
+
+    const executor = await initializeAgentExecutorWithOptions(tools, chat, {
+      agentType: "openai-functions",
+      verbose: true,
+    });
+
+    const result = await executor.run(
+      currentMessageContent || "What is the weather in San Francisco?"
+    );
+    console.log("result of search: ", result);
+    return result;
+
+    // return new StreamingTextResponse(stream, {
+    //   headers: {
+    //     "x-message-index": (formattedPreviousMessages.length + 1).toString(),
+    //   },
+    // });
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
+};
+
+const mayorAgent = async (messages: any, userId: any) => {
+  try {
     const client = getSupabaseClient();
 
     console.log("messages: ", messages);
@@ -111,7 +199,6 @@ export async function POST(req: NextRequest) {
       tableName: "sfacc_documents",
       queryName: "match_sfacc_documents",
     });
-
     // initialize the standaloneQuestionChain
     // takes in: chat_history + question to generate the standalone question used for the document retrieval and question for the answerChain
     const standaloneQuestionChain = RunnableSequence.from([
@@ -132,12 +219,12 @@ export async function POST(req: NextRequest) {
           handleRetrieverEnd(documents) {
             // Filter documents based on metadata source property
             console.log("retrieved documents len: ", documents.length);
-            const filteredDocuments = documents.filter(
-              (doc) => doc.metadata?.source === videoId
-            );
-            console.log("filteredDocuments len: ", filteredDocuments.length);
+            // const filteredDocuments = documents.filter(
+            //   (doc) => doc.metadata?.source === videoId
+            // );
+            // console.log("filteredDocuments len: ", filteredDocuments.length);
 
-            resolveWithDocuments(filteredDocuments);
+            resolveWithDocuments(documents);
           },
         },
       ],
@@ -213,24 +300,25 @@ export async function POST(req: NextRequest) {
     // // const documents = await documentPromise;
     console.log("got here");
 
-    // const serializedSources = Buffer.from(
-    //   JSON.stringify(
-    //     documents.map((doc) => {
-    //       return {
-    //         pageContent: doc.pageContent,
-    //         metadata: doc.metadata,
-    //       };
-    //     })
-    //   )
-    // ).toString("base64");
+    const documents = await documentPromise;
+    const serializedSources = Buffer.from(
+      JSON.stringify(
+        documents.map((doc) => {
+          return {
+            pageContent: doc.pageContent,
+            metadata: doc.metadata,
+          };
+        })
+      )
+    ).toString("base64");
 
     return new StreamingTextResponse(stream, {
       headers: {
         "x-message-index": (formattedPreviousMessages.length + 1).toString(),
-        // "x-sources": serializedSources,
+        "x-sources": serializedSources,
       },
     });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
-}
+};

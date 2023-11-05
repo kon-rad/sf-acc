@@ -4,73 +4,60 @@ import { getSupabaseClient } from "@/lib/utils/supabase";
 import { YoutubeLoader } from "langchain/document_loaders/web/youtube";
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { CheerioWebBaseLoader } from "langchain/document_loaders/web/cheerio";
+import { ApifyDatasetLoader } from "langchain/document_loaders/web/apify_dataset";
+import { Document } from "langchain/document";
 import { SupabaseVectorStore } from "langchain/vectorstores/supabase";
 
-interface UploadType {
-  userId: string;
-}
-
 export const POST = async (request: Request): Promise<Response> => {
-  const res: UploadType = await request.json(); // res now contains body
-  const { subect, url } = res;
+  const res: any = await request.json(); // res now contains body
+  const { subject, url } = res;
+  console.log("subject, url", subject, url);
+
   const supabase_db = getSupabaseClient();
 
-  // const loader = YoutubeLoader.createFromUrl(fromURL, {
-  //   language: "en",
-  //   addVideoInfo: true,
-  // });
+  const loader = await ApifyDatasetLoader.fromActorCall(
+    "apify/website-content-crawler",
+    {
+      startUrls: [{ url: url }],
+    },
+    {
+      datasetMappingFunction: (item) => {
+        console.log("url: ", item.url);
+
+        return new Document({
+          pageContent: (item.text || "") as string,
+          metadata: { source: item.url },
+        });
+      },
+      clientOptions: {
+        token: process.env.APIFY_API_TOKEN,
+      },
+    }
+  );
+
   const docs = await loader.load();
 
-  // check if it is indexed in video_docs_data
-  const isIndexed = await checkVideoDocumentsTableForId(userId);
-  let responseData: any = {};
-  console.log("isIndexed", isIndexed);
-  console.log("docs len", docs.length);
+  console.log("docs len: ", docs.length);
 
-    // uncomment this when done with summarization - need to vectorize all transcripts
-    await uploadDocs(docs);
-    console.log("uploading docs now!!!!");
-
-    return new Response(
-      JSON.stringify({ message: "index successful", data: responseData })
-    );
-  }
-};
-
-export const splitDocuments = async (docs: any) => {
   const splitter = new RecursiveCharacterTextSplitter({
     chunkSize: 750,
     chunkOverlap: 50,
   });
 
-  const output = await splitter.splitDocuments(docs);
-  console.log("splitDocuments output: ", output);
+  const transformedDocs = await splitter.splitDocuments(docs);
+  // console.log("transformedDocs output : ", transformedDocs);
+  console.log("transformedDocs len : ", transformedDocs.length);
 
-  return output;
-};
-
-/**
- * uploads to supabase  video_documents
- * @param docs
- * @returns
- */
-export const uploadDocs = async (docs: any): Promise<any> => {
-  const client = getSupabaseClient();
-
-  const transformedDocs = await splitDocuments(docs);
-
-  console.log("transformedDocs: ", transformedDocs);
-  // console.log("transformedDocs len: ", transformedDocs.length);
-
-  const vectorStore = await SupabaseVectorStore.fromDocuments(
+  await SupabaseVectorStore.fromDocuments(
     transformedDocs,
     new OpenAIEmbeddings(),
     {
-      client,
-      tableName: "video_documents",
-      queryName: "match_video_documents",
+      client: supabase_db,
+      tableName: "sfacc_documents",
+      queryName: "match_sfacc_documents",
     }
   );
 
-  return vectorStore;
+  return new Response(JSON.stringify({ message: "index successful" }));
 };
