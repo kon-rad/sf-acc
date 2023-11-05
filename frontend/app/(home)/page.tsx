@@ -25,7 +25,7 @@ const HomePage = (): JSX.Element => {
         display: "flex",
         flexDirection: "row", // Align children in a row
         alignItems: "stretch", // Stretch children to fill the container height
-        backgroundImage: 'url("/assets/images/sfacc.png")',
+        backgroundImage: 'url("/assets/images/sf-drone.JPG")',
         backgroundSize: "cover",
         backgroundPosition: "left",
         backgroundRepeat: "no-repeat",

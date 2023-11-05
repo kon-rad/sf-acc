@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import textToSpeech from "../utils/textToSpeech";
 
-const SpeechPlayer = ({ textBody }: any) => {
+const SpeechPlayer = ({ textBody, voice }: any) => {
   // Define a state variable to hold the audio URL
   const [audioURL, setAudioURL] = useState(null);
 
   // Define a function to fetch the audio data and set the URL state variable
   const handleAudioFetch = async () => {
     // Call the textToSpeech function to generate the audio data for the text "Hello welcome"
-    const data = await textToSpeech(textBody);
+    const data = await textToSpeech(textBody, voice);
     // Create a new Blob object from the audio data with MIME type 'audio/mpeg'
     const blob = new Blob([data], { type: "audio/mpeg" });
     // Create a URL for the blob object

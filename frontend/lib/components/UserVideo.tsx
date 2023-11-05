@@ -29,11 +29,11 @@ const UserVideo = ({ name }: { name: string }) => {
         >
           Take Screenshot
         </button>
-        {screenshot && (
+        {/* {screenshot && (
           <div className="mt-4">
             <img src={screenshot} alt="Screenshot" />
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );

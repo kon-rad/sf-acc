@@ -4,11 +4,16 @@ import UserVideo from "./UserVideo";
 const demo = false;
 const ZoomCall = () => {
   const users = [
-    { id: 1, name: "Breed London, Mayor of San Francisco", img: "/assets/images/mayor.png" },
-    { id: 2, name: "Steve Jobs", img: "/assets/images/jobs.png" },
+    {
+      id: 1,
+      name: "Breed London, Mayor of San Francisco",
+      img: "/assets/images/mayor.png",
+    },
+    { id: 2, name: "Ilya Sutskever", img: "/assets/images/ilya.png" },
+    // { id: 2, name: "Steve Jobs", img: "/assets/images/ilya.png" },
     { id: 3, name: "News Reporter", img: "/assets/images/reporter.png" },
   ];
-  const username = "konrad";
+  const username = "User 1";
   const displayUsers = [...users];
   console.log("users: ", users);
   const VideoComponent = ({ src, name }) => (

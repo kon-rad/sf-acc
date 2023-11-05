@@ -5,10 +5,10 @@ export const sendMessage = async (
   setMessages: any,
   newMessages: any,
   userId: string,
-  setStatus: any,
+  setStatus: any
 ) => {
   try {
-    setStatus('PENDING');
+    setStatus("PENDING");
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: {
@@ -28,10 +28,19 @@ export const sendMessage = async (
     }
     let sourcesText = "";
     const sourcesHeader = response.headers.get("x-sources");
+    const roleHeader = response.headers.get("x-role");
+    let roleText = "";
+    console.log("sourcesHeader: ", sourcesHeader);
+    console.log("roleHeader: ", roleHeader);
     if (sourcesHeader) {
       const decodedString = atob(sourcesHeader);
       sourcesText = JSON.parse(decodedString);
       console.log("Sources Text:", sourcesText);
+    } else if (roleHeader) {
+      console.log("roleHeader: ", roleHeader);
+
+      roleText = roleHeader;
+      console.log("roleText Text:", roleText);
     } else {
       console.error("x-sources header is not present in the response");
     }
@@ -40,7 +49,8 @@ export const sendMessage = async (
       setMessages,
       newMessages,
       sourcesText,
-      setStatus
+      setStatus,
+      roleText
     );
   } catch (error) {
     console.log(error);
@@ -52,7 +62,8 @@ const handleStream = async (
   setMessages: any,
   newMessages: any,
   sources: any,
-  setStatus: any
+  setStatus: any,
+  roleText: any
 ): Promise<void> => {
   let message = "";
 
@@ -64,12 +75,12 @@ const handleStream = async (
     message += text;
 
     if (done) {
-      setStatus('READY')
+      setStatus("READY");
       return;
     }
     setMessages([
       ...newMessages,
-      { content: message, role: "assistant", sources },
+      { content: message, role: roleText, sources },
     ]);
     await handleStreamRecursively();
   };

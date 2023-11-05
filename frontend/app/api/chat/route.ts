@@ -105,25 +105,173 @@ export async function POST(req: NextRequest) {
       });
       return matchFound;
     };
-    let response = "hey lets try again";
 
     // Call the function to search for keywords and log if they are present
     const agentChosen = searchAndLogKeywords(currentMessageContent);
     if (agentChosen?.toLowerCase() === "news") {
       console.log("news agent picked");
       const response = await newsAgent(messages, userId);
-      return new Response(
-        JSON.stringify(response, {
-          headers: {
-            "x-message-index": (
-              formattedPreviousMessages.length + 1
-            ).toString(),
-          },
-        })
-      );
+      return new Response(JSON.stringify(response), {
+        headers: {
+          "x-message-index": (formattedPreviousMessages.length + 1).toString(),
+          "x-role": "news",
+        },
+        status: 200,
+      });
     } else if (agentChosen?.toLowerCase() === "mayor") {
       console.log("mayor agent picked");
-      await mayorAgent(messages, userId);
+
+      const client = getSupabaseClient();
+
+      console.log("messages: ", messages);
+      console.log("userId: ", userId);
+      const formattedPreviousMessages = messages
+        .slice(0, -1)
+        .map(formatMessage);
+      const currentMessageContent = messages[messages.length - 1].content;
+      console.log("currentMessageContent", currentMessageContent);
+      console.log("formattedPreviousMessages", formattedPreviousMessages);
+
+      const condenseQuestionPrompt = PromptTemplate.fromTemplate(
+        CONDENSE_QUESTION_TEMPLATE
+      );
+      const answerPrompt = PromptTemplate.fromTemplate(MAYOR_ANSWER_TEMPLATE);
+
+      // const model = new ChatOpenAI({
+      //   modelName: "gpt-3.5-turbo",
+      //   temperature: 0.2,
+      //   openAIApiKey: process.env.OPENAI_API_KEY,
+      // });
+      const model = new ChatAnthropic({
+        temperature: 0.9,
+        anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+      });
+
+      const vectorStore = new SupabaseVectorStore(new OpenAIEmbeddings(), {
+        client,
+        tableName: "sfacc_documents",
+        queryName: "match_sfacc_documents",
+      });
+      // initialize the standaloneQuestionChain
+      // takes in: chat_history + question to generate the standalone question used for the document retrieval and question for the answerChain
+      const standaloneQuestionChain = RunnableSequence.from([
+        condenseQuestionPrompt,
+        model,
+        new StringOutputParser(),
+      ]);
+
+      let resolveWithDocuments: (value: Document[]) => void;
+      const documentPromise = new Promise<Document[]>((resolve) => {
+        resolveWithDocuments = resolve;
+      });
+
+      const retriever = vectorStore.asRetriever({
+        // filter: { source: videoId },
+        callbacks: [
+          {
+            handleRetrieverEnd(documents) {
+              // Filter documents based on metadata source property
+              console.log("retrieved documents len: ", documents.length);
+              // const filteredDocuments = documents.filter(
+              //   (doc) => doc.metadata?.source === videoId
+              // );
+              // console.log("filteredDocuments len: ", filteredDocuments.length);
+
+              resolveWithDocuments(documents);
+            },
+          },
+        ],
+      });
+
+      const combineDocumentsFn = (docs: Document[], separator = "\n\n") => {
+        const serializedDocs = docs.map((doc) => doc.pageContent);
+        return serializedDocs.join(separator);
+      };
+
+      // initialize the retrievalChain
+      const retrievalChain = retriever.pipe(combineDocumentsFn);
+      console.log("before answerChain");
+
+      // initialize the answerChain - combines retrievalChain which gets the context documents
+      // it invokes the retrievalChain
+      const answerChain = RunnableSequence.from([
+        {
+          context: RunnableSequence.from([
+            (input) => input.question,
+            retrievalChain,
+          ]),
+          chat_history: (input) => input.chat_history,
+          question: (input) => input.question,
+        },
+        answerPrompt,
+        model,
+      ]);
+      console.log("after answerChain");
+
+      // conversationalRetrievalQAChain
+      //    1st -> standaloneQuestionChain:
+      //                        1. generates stand-alone question using chat_history + question
+      //    2nd -> answerChain:
+      //                        1 invokes retrievalChain with stand-alone question as query
+      //                        2. invokes answerChain with context, chat_history & stand-alone question
+      //          -> retrievalChain
+
+      // initialize the conversationalRetrievalQAChain
+      // it invokes the answerChain
+      // it invokes the standaloneQuestionChain
+      const conversationalRetrievalQAChain = RunnableSequence.from([
+        {
+          question: standaloneQuestionChain,
+          chat_history: (input) => input.chat_history,
+        },
+        answerChain,
+        new BytesOutputParser(),
+      ]);
+      console.log("after conversationalRetrievalQAChain");
+      console.log("currentMessageContent", currentMessageContent);
+      console.log("formattedPreviousMessages", formattedPreviousMessages);
+
+      const stream = await conversationalRetrievalQAChain
+        .stream({
+          question: currentMessageContent,
+          chat_history: formattedPreviousMessages,
+        })
+        .catch((e) => console.error("Error with stream:", e));
+      console.log("got here 1 ");
+
+      // const textRes = await conversationalRetrievalQAChain
+      //   .invoke({
+      //     question: currentMessageContent,
+      //     chat_history: formattedPreviousMessages,
+      //   })
+      //   .catch((e) => console.error("Error with stream:", e));
+      // console.log("got here 1 textRes ", textRes);
+
+      // const resultTwo = await chain.invoke({
+      //   chatHistory: formatChatHistory(resultOne, questionOne),
+      //   question: "Was it
+      // // const documents = await documentPromise;
+      console.log("got here");
+
+      const documents = await documentPromise;
+      const serializedSources = Buffer.from(
+        JSON.stringify(
+          documents.map((doc) => {
+            return {
+              pageContent: doc.pageContent,
+              metadata: doc.metadata,
+            };
+          })
+        )
+      ).toString("base64");
+
+      return new StreamingTextResponse(stream, {
+        headers: {
+          "x-message-index": (formattedPreviousMessages.length + 1).toString(),
+          "x-sources": serializedSources,
+          "x-role": "news",
+        },
+      });
     } else if (agentChosen?.toLowerCase() === "steve") {
       console.log("steve agent picked");
     } else if (agentChosen?.toLowerCase() === "ilya") {
@@ -168,157 +316,9 @@ const newsAgent = async (messages: string, userId: string) => {
   }
 };
 
-const mayorAgent = async (messages: any, userId: any) => {
-  try {
-    const client = getSupabaseClient();
-
-    console.log("messages: ", messages);
-    console.log("userId: ", userId);
-    const formattedPreviousMessages = messages.slice(0, -1).map(formatMessage);
-    const currentMessageContent = messages[messages.length - 1].content;
-    console.log("currentMessageContent", currentMessageContent);
-    console.log("formattedPreviousMessages", formattedPreviousMessages);
-
-    const condenseQuestionPrompt = PromptTemplate.fromTemplate(
-      CONDENSE_QUESTION_TEMPLATE
-    );
-    const answerPrompt = PromptTemplate.fromTemplate(MAYOR_ANSWER_TEMPLATE);
-
-    // const model = new ChatOpenAI({
-    //   modelName: "gpt-3.5-turbo",
-    //   temperature: 0.2,
-    //   openAIApiKey: process.env.OPENAI_API_KEY,
-    // });
-    const model = new ChatAnthropic({
-      temperature: 0.9,
-      anthropicApiKey: process.env.ANTHROPIC_API_KEY,
-    });
-
-    const vectorStore = new SupabaseVectorStore(new OpenAIEmbeddings(), {
-      client,
-      tableName: "sfacc_documents",
-      queryName: "match_sfacc_documents",
-    });
-    // initialize the standaloneQuestionChain
-    // takes in: chat_history + question to generate the standalone question used for the document retrieval and question for the answerChain
-    const standaloneQuestionChain = RunnableSequence.from([
-      condenseQuestionPrompt,
-      model,
-      new StringOutputParser(),
-    ]);
-
-    let resolveWithDocuments: (value: Document[]) => void;
-    const documentPromise = new Promise<Document[]>((resolve) => {
-      resolveWithDocuments = resolve;
-    });
-
-    const retriever = vectorStore.asRetriever({
-      // filter: { source: videoId },
-      callbacks: [
-        {
-          handleRetrieverEnd(documents) {
-            // Filter documents based on metadata source property
-            console.log("retrieved documents len: ", documents.length);
-            // const filteredDocuments = documents.filter(
-            //   (doc) => doc.metadata?.source === videoId
-            // );
-            // console.log("filteredDocuments len: ", filteredDocuments.length);
-
-            resolveWithDocuments(documents);
-          },
-        },
-      ],
-    });
-
-    const combineDocumentsFn = (docs: Document[], separator = "\n\n") => {
-      const serializedDocs = docs.map((doc) => doc.pageContent);
-      return serializedDocs.join(separator);
-    };
-
-    // initialize the retrievalChain
-    const retrievalChain = retriever.pipe(combineDocumentsFn);
-    console.log("before answerChain");
-
-    // initialize the answerChain - combines retrievalChain which gets the context documents
-    // it invokes the retrievalChain
-    const answerChain = RunnableSequence.from([
-      {
-        context: RunnableSequence.from([
-          (input) => input.question,
-          retrievalChain,
-        ]),
-        chat_history: (input) => input.chat_history,
-        question: (input) => input.question,
-      },
-      answerPrompt,
-      model,
-    ]);
-    console.log("after answerChain");
-
-    // conversationalRetrievalQAChain
-    //    1st -> standaloneQuestionChain:
-    //                        1. generates stand-alone question using chat_history + question
-    //    2nd -> answerChain:
-    //                        1 invokes retrievalChain with stand-alone question as query
-    //                        2. invokes answerChain with context, chat_history & stand-alone question
-    //          -> retrievalChain
-
-    // initialize the conversationalRetrievalQAChain
-    // it invokes the answerChain
-    // it invokes the standaloneQuestionChain
-    const conversationalRetrievalQAChain = RunnableSequence.from([
-      {
-        question: standaloneQuestionChain,
-        chat_history: (input) => input.chat_history,
-      },
-      answerChain,
-      new BytesOutputParser(),
-    ]);
-    console.log("after conversationalRetrievalQAChain");
-    console.log("currentMessageContent", currentMessageContent);
-    console.log("formattedPreviousMessages", formattedPreviousMessages);
-
-    const stream = await conversationalRetrievalQAChain
-      .stream({
-        question: currentMessageContent,
-        chat_history: formattedPreviousMessages,
-      })
-      .catch((e) => console.error("Error with stream:", e));
-    console.log("got here 1 ");
-
-    // const textRes = await conversationalRetrievalQAChain
-    //   .invoke({
-    //     question: currentMessageContent,
-    //     chat_history: formattedPreviousMessages,
-    //   })
-    //   .catch((e) => console.error("Error with stream:", e));
-    // console.log("got here 1 textRes ", textRes);
-
-    // const resultTwo = await chain.invoke({
-    //   chatHistory: formatChatHistory(resultOne, questionOne),
-    //   question: "Was it
-    // // const documents = await documentPromise;
-    console.log("got here");
-
-    const documents = await documentPromise;
-    const serializedSources = Buffer.from(
-      JSON.stringify(
-        documents.map((doc) => {
-          return {
-            pageContent: doc.pageContent,
-            metadata: doc.metadata,
-          };
-        })
-      )
-    ).toString("base64");
-
-    return new StreamingTextResponse(stream, {
-      headers: {
-        "x-message-index": (formattedPreviousMessages.length + 1).toString(),
-        "x-sources": serializedSources,
-      },
-    });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
-  }
-};
+// const mayorAgent = async (messages: any, userId: any) => {
+//   try {
+//   } catch (e: any) {
+//     return NextResponse.json({ error: e.message }, { status: 500 });
+//   }
+// };
