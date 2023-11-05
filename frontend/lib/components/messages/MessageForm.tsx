@@ -14,7 +14,6 @@ const MessageForm = ({ setStatus }: any) => {
     alert("please login /login");
   }
   const userId = session?.user.id;
-  console.log("session: ", userId);
   useEffect(() => {
     const fetchData = async () => {
       // const response = await axios.post("/api/agent/chat", {

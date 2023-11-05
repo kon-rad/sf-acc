@@ -23,12 +23,12 @@ const UserVideo = ({ name }: { name: string }) => {
       />
       <div className="absolute bottom-0 bg-black bg-opacity-60 w-full p-2 text-white text-sm">
         {name || "user 1"}
-        <button
+        {/* <button
           onClick={handleTakeScreenshot}
           className="ml-8 mt-1 bg-gray-600 text-white p-1 rounded"
         >
           Take Screenshot
-        </button>
+        </button> */}
         {/* {screenshot && (
           <div className="mt-4">
             <img src={screenshot} alt="Screenshot" />

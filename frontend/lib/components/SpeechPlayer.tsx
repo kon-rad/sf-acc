@@ -14,7 +14,6 @@ const SpeechPlayer = ({ textBody, voice }: any) => {
     // Create a URL for the blob object
     const url = URL.createObjectURL(blob);
     // Set the audio URL state variable to the newly created URL
-    console.log("new url is set inside fetch", url);
 
     setAudioURL(url);
   };
@@ -23,7 +22,6 @@ const SpeechPlayer = ({ textBody, voice }: any) => {
   useEffect(() => {
     handleAudioFetch();
   }, []);
-  console.log("this is render in speeck player url: ", textBody, audioURL);
 
   // Render an audio element with the URL if it is not null
   return (

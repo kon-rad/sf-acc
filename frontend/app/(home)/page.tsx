@@ -17,7 +17,6 @@ const HomePage = (): JSX.Element => {
   if (!session?.user.id) {
     alert("please login /login");
   }
-  console.log("session: ", session?.user.id);
   return (
     <div
       style={{

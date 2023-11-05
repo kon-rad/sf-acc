@@ -108,7 +108,7 @@ const MessagesList = ({ setStatus, status }: any) => {
     } else if (role === "ilya") {
       return "/assets/images/ilya.png";
     } else {
-      return "/assets/images/ilya.png";
+      return "/assets/images/mayor.png";
     }
   };
 
